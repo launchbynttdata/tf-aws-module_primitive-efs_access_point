@@ -61,3 +61,5 @@ azure_env.sh
 
 # VS Code
 .vscode/
+.devcontainer
+.venv

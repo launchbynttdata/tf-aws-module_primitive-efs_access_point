@@ -1,21 +1,26 @@
-# Simple Example
+# Complete Example
 
-This example provides a basic configuration of the `tf-aws-module_primitive-efs_access_point` module, demonstrating the minimal required setup for creating an EFS access point with automatic resource naming.
+This example demonstrates a comprehensive configuration of the `tf-aws-module_primitive-efs_access_point` module, showcasing all available features with automatic resource naming and advanced access point configuration.
 
 ## Features
 
-- Creates an EFS file system with encryption enabled using AWS managed keys
-- Creates a basic EFS access point without POSIX user enforcement
+- Creates an EFS file system with customizable encryption, performance, and throughput settings
+- Creates an EFS access point with POSIX user enforcement (UID: 1000, GID: 1000)
+- Configures root directory with creation info (owner and permissions)
 - Automatic resource naming using the launch naming module
-- Minimal configuration suitable for quick deployments
-- Region-aware naming: derives region abbreviation from AWS region (e.g., us-west-2 → uswest2)
+- Lifecycle policy configuration support
+- Protection configuration support
+- Demonstrates full tagging strategy
+- Region-aware naming: derives region abbreviation from AWS region
 
 ## Architecture
 
 This example creates:
-1. **EFS File System**: Using the `aws_efs_file_system` resource with encryption enabled
-2. **EFS Access Point**: Using the `tf-aws-module_primitive-efs_access_point` module
-3. **Automatic Naming**: Uses the launch naming convention module to generate consistent resource names based on input parameters
+
+1. **EFS File System**: Using the `aws_efs_file_system` resource with full customization
+2. **EFS Access Point**: Using the `tf-aws-module_primitive-efs_access_point` module with POSIX user and root directory enforcement
+3. **Automatic Naming**: Uses the launch naming convention module to generate consistent resource names
+4. **Advanced Features**: Demonstrates optional lifecycle policies and protection settings
 
 ## Usage
 
@@ -32,12 +37,12 @@ terraform destroy -var-file=test.tfvars
 
 ### Required Variables
 
-- `aws_region`: The AWS region where resources will be deployed (e.g., "us-west-2", "us-east-1")
-- `region`: AWS region abbreviation without hyphens (e.g., "uswest2", "use") - used by the naming module
-- `logical_product_family`: Product family name for naming (default: inherited)
-- `logical_product_service`: Product service name for naming (default: inherited)
+- `aws_region`: The AWS region where resources will be deployed (e.g., "us-east-1")
+- `region`: AWS region abbreviation without hyphens (e.g., "use") - used by the naming module
+- `logical_product_family`: Product family name for naming (default: "launch")
+- `logical_product_service`: Product service name for naming (default: "efs")
 - `class_env`: Environment class for naming (e.g., "dev", "qa", "prod")
-- `instance_env`: Instance environment number for uniqueness (default: 0 for simple example)
+- `instance_env`: Instance environment number for uniqueness (default: 1 for complete example)
 - `instance_resource`: Instance resource identifier (default: "001")
 
 ### Optional Variables
@@ -46,16 +51,22 @@ terraform destroy -var-file=test.tfvars
 - `kms_key_id`: Custom KMS key for encryption (default: AWS managed key)
 - `performance_mode`: File system performance mode (default: "generalPurpose")
 - `throughput_mode`: Throughput mode (default: "bursting")
+- `lifecycle_policy`: Lifecycle policy configuration for cost optimization
+- `protection`: Protection configuration for data protection
+- `posix_user`: POSIX user configuration (UID/GID) - default: null
+- `root_directory`: Root directory path and creation info - default: null
 - `tags`: Additional resource tags
 
 ## Resources Created
 
-- 1 EFS file system (encrypted with general purpose performance mode)
-- 1 EFS access point
+- 1 EFS file system (encrypted with customizable performance settings)
+- 1 EFS access point with POSIX user enforced (UID: 1000, GID: 1000)
+- Root directory enforced at `/data` with owner enforcement (UID: 1000, GID: 1000, permissions: 755)
 
 ## Region Abbreviation
 
 The example automatically derives the region abbreviation from the `aws_region` variable:
+
 - Removes hyphens from the AWS region name
 - Example transformations:
   - `us-east-1` → `use`
@@ -67,7 +78,7 @@ The example automatically derives the region abbreviation from the `aws_region` 
 To test this example:
 
 ```bash
-cd examples/simple
+cd examples/complete
 terraform init
 
 # Validate configuration
@@ -89,14 +100,14 @@ terraform destroy -var-file=test.tfvars
 ## Example test.tfvars
 
 ```hcl
-aws_region = "us-west-2"
+aws_region = "us-east-1"
 
 # Naming convention configuration
 logical_product_family  = "launch"
 logical_product_service = "efs"
-region                  = "uswest2"
+region                  = "use"
 class_env               = "dev"
-instance_env            = 0
+instance_env            = 1
 instance_resource       = "001"
 
 # EFS file system configuration
@@ -104,23 +115,45 @@ encrypted        = true
 performance_mode = "generalPurpose"
 throughput_mode  = "bursting"
 
+# Access point configuration with POSIX user enforcement
+posix_user = {
+  uid = 1000
+  gid = 1000
+}
+
+# Root directory with creation info
+root_directory = {
+  path = "/data"
+  creation_info = {
+    owner_uid   = 1000
+    owner_gid   = 1000
+    permissions = "755"
+  }
+}
+
 tags = {
   Environment = "dev"
-  Example     = "simple"
+  Example     = "complete"
   Application = "efs-access-point"
 }
 ```
 
+## Security Considerations
+
+- **POSIX User Enforcement**: The access point enforces that all file operations use UID: 1000, GID: 1000, preventing privilege escalation
+- **Root Directory Enforcement**: Clients can only access files within the `/data` directory tree
+- **File Permissions**: The root directory is created with 755 permissions (readable/executable for all, writable only by owner)
+- **Access Control**: Combine with appropriate IAM policies and security group rules
+
 ## Notes
 
-- This is the simplest configuration that creates a functional EFS access point with automatic naming
-- No POSIX user enforcement is configured (access point accepts any user)
-- No root directory restrictions are applied (full file system access)
-- The `aws_region` variable is required and has no default to prevent accidental deployments
-- The `region` variable (abbreviation) is required and must be manually specified to ensure proper naming
-- Resource names are automatically generated based on the naming module configuration
-- This example is ideal for getting started quickly or for testing purposes
-- The `instance_env` is set to 0 for the simple example, ensuring unique names when compared to the complete example (instance_env = 1)
+- This is a feature-complete configuration that demonstrates all capabilities of the EFS access point module
+- The access point enforces POSIX user identity for all file operations
+- The root directory configuration enforces a specific path and directory permissions
+- All resources are tagged with Environment, Example, and Application tags for easy identification and cost allocation
+- The `aws_region` and `region` variables are required and must be explicitly provided
+- The `instance_env` is set to 1 for the complete example, ensuring unique names when compared to the simple example (instance_env = 0)
+- This example is ideal for production-like scenarios with strict access control requirements
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
@@ -134,7 +167,7 @@ tags = {
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.22.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 6.22.1 |
 
 ## Modules
 
@@ -167,7 +200,12 @@ tags = {
 | <a name="input_throughput_mode"></a> [throughput\_mode](#input\_throughput\_mode) | Throughput mode for the file system. Valid values: bursting, provisioned. | `string` | `"bursting"` | no |
 | <a name="input_creation_token"></a> [creation\_token](#input\_creation\_token) | A unique name used as reference when creating the EFS. If null, will use generated name from resource\_names module | `string` | `null` | no |
 | <a name="input_name"></a> [name](#input\_name) | Optional name for the EFS file system. If provided, will be added as a 'Name' tag. If null, will use generated name from resource\_names module | `string` | `null` | no |
-| <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to assign to the resources. | `map(string)` | <pre>{<br/>  "Environment": "dev",<br/>  "Example": "simple"<br/>}</pre> | no |
+| <a name="input_access_point_name"></a> [access\_point\_name](#input\_access\_point\_name) | Optional name for the EFS access point. If provided, will be added as a 'Name' tag. | `string` | `null` | no |
+| <a name="input_lifecycle_policy"></a> [lifecycle\_policy](#input\_lifecycle\_policy) | A lifecycle\_policy block as defined below. | <pre>object({<br/>    transition_to_ia                    = optional(string)<br/>    transition_to_primary_storage_class = optional(string)<br/>    transition_to_archive               = optional(string)<br/>  })</pre> | `null` | no |
+| <a name="input_protection"></a> [protection](#input\_protection) | A protection block as defined below. | <pre>object({<br/>    replication_overwrite = optional(string)<br/>  })</pre> | `null` | no |
+| <a name="input_posix_user"></a> [posix\_user](#input\_posix\_user) | POSIX user configuration for the access point | <pre>object({<br/>    uid            = number<br/>    gid            = number<br/>    secondary_gids = optional(list(number))<br/>  })</pre> | `null` | no |
+| <a name="input_root_directory"></a> [root\_directory](#input\_root\_directory) | Root directory configuration for the access point | <pre>object({<br/>    path = string<br/>    creation_info = optional(object({<br/>      owner_uid   = number<br/>      owner_gid   = number<br/>      permissions = string<br/>    }))<br/>  })</pre> | `null` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to assign to the resources | `map(string)` | <pre>{<br/>  "Environment": "dev",<br/>  "Example": "complete"<br/>}</pre> | no |
 
 ## Outputs
 
@@ -178,4 +216,8 @@ tags = {
 | <a name="output_access_point_id"></a> [access\_point\_id](#output\_access\_point\_id) | The ID of the EFS access point |
 | <a name="output_access_point_arn"></a> [access\_point\_arn](#output\_access\_point\_arn) | The ARN of the EFS access point |
 | <a name="output_access_point_name"></a> [access\_point\_name](#output\_access\_point\_name) | The Name tag of the EFS access point (if set) |
+| <a name="output_access_point_owner_id"></a> [access\_point\_owner\_id](#output\_access\_point\_owner\_id) | The AWS account ID that owns the access point resource |
+| <a name="output_access_point_posix_user"></a> [access\_point\_posix\_user](#output\_access\_point\_posix\_user) | The POSIX user identity configuration including secondary GIDs |
+| <a name="output_access_point_root_directory"></a> [access\_point\_root\_directory](#output\_access\_point\_root\_directory) | The root directory configuration including creation info |
+| <a name="output_access_point_tags"></a> [access\_point\_tags](#output\_access\_point\_tags) | Tags assigned to the access point |
 <!-- END_TF_DOCS -->

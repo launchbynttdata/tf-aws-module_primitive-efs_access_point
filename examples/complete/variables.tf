@@ -116,11 +116,58 @@ variable "name" {
   default     = null
 }
 
+variable "access_point_name" {
+  description = "Optional name for the EFS access point. If provided, will be added as a 'Name' tag."
+  type        = string
+  default     = null
+}
+
+variable "lifecycle_policy" {
+  description = "A lifecycle_policy block as defined below."
+  type = object({
+    transition_to_ia                    = optional(string)
+    transition_to_primary_storage_class = optional(string)
+    transition_to_archive               = optional(string)
+  })
+  default = null
+}
+
+variable "protection" {
+  description = "A protection block as defined below."
+  type = object({
+    replication_overwrite = optional(string)
+  })
+  default = null
+}
+
+variable "posix_user" {
+  description = "POSIX user configuration for the access point"
+  type = object({
+    uid            = number
+    gid            = number
+    secondary_gids = optional(list(number))
+  })
+  default = null
+}
+
+variable "root_directory" {
+  description = "Root directory configuration for the access point"
+  type = object({
+    path = string
+    creation_info = optional(object({
+      owner_uid   = number
+      owner_gid   = number
+      permissions = string
+    }))
+  })
+  default = null
+}
+
 variable "tags" {
-  description = "A map of tags to assign to the resources."
+  description = "A map of tags to assign to the resources"
   type        = map(string)
   default = {
     Environment = "dev"
-    Example     = "simple"
+    Example     = "complete"
   }
 }

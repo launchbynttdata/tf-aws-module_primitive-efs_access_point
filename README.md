@@ -1,447 +1,280 @@
 # tf-aws-module_primitive-efs_access_point
 
+A Terraform primitive module that wraps the `aws_efs_access_point` resource, providing a consistent and validated interface for managing EFS Access Points.
+
 ## What is a Primitive Module?
 
 A **primitive module** is a thin, focused Terraform wrapper around a single AWS resource type. Primitive modules:
 
-- Wrap a **single AWS resource** (e.g., `aws_eks_cluster`, `aws_kms_key`, `aws_s3_bucket`)
+- Wrap a **single AWS resource** (e.g., `aws_efs_access_point`)
 - Provide sensible defaults while maintaining full configurability
 - Include comprehensive validation rules
 - Follow consistent patterns for inputs, outputs, and tagging
 - Include automated testing using Terratest
 - Serve as building blocks for higher-level composite modules
 
-For examples of well-structured primitive modules, see:
+## Overview
 
-- [tf-aws-module_primitive-eks_cluster](https://github.com/launchbynttdata/tf-aws-module_primitive-eks_cluster)
-- [tf-aws-module_primitive-kms_key](https://github.com/launchbynttdata/tf-aws-module_primitive-kms_key)
+This module creates an **EFS Access Point** that enforces a user identity and root directory for clients accessing an EFS file system. Access points simplify access management by:
 
----
+- Enforcing a POSIX user identity for all connections
+- Enforcing a root directory for the file system
+- Enabling access control at the file system level
+- Improving security through identity isolation
 
-## Getting Started with This Template
+### Key Features
 
-### 1. Create Your New Module Repository
+- **POSIX User Enforcement**: Optionally enforce a specific UID/GID for all file access
+- **Root Directory Configuration**: Optionally enforce a specific directory as the root path
+- **Creation Info**: Optionally configure owner and permissions for the root directory
+- **Comprehensive Tagging**: Full support for resource tagging
+- **Flexible Configuration**: All options are optional, supporting both simple and complex scenarios
+- **Validation**: Input validation ensures correct configuration
 
-1. Click the "Use this template" button on GitHub
-2. Name your repository following the naming convention: `tf-aws-module_primitive-<resource_name>`
-   - Examples: `tf-aws-module_primitive-s3_bucket`, `tf-aws-module_primitive-lambda_function`
-3. Clone your new repository locally
+## Usage
 
-### 2. Initialize and Clean Up Template References
+### Simple Example
 
-After cloning, run the cleanup target to update template references with your actual repository information:
-
-```bash
-make init-module
-```
-
-This command will:
-
-- Update the `go.mod` file with your repository's GitHub URL
-- Update test imports to reference your new module name
-- Remove template-specific placeholders
-
-### 3. Configure Your Environment
-
-Install required development dependencies:
-
-```bash
-make configure-dependencies
-make configure-git-hooks
-```
-
-This installs:
-
-- Terraform
-- Go
-- Pre-commit hooks
-- Other development tools specified in `.tool-versions`
-
----
-
-## HOWTO: Developing a Primitive Module
-
-### Step 1: Define Your Resource
-
-1. **Identify the AWS resource** you're wrapping (e.g., `aws_eks_cluster`)
-2. **Review AWS documentation** for the resource to understand all available parameters
-3. **Study similar primitive modules** for patterns and best practices
-
-### Step 2: Create the Module Structure
-
-Your primitive module should include these core files:
-
-#### `main.tf`
-
-- Contains the primary resource declaration
-- Should be clean and focused on the single resource
-- Example:
+Create a basic EFS access point with minimal configuration:
 
 ```hcl
-resource "aws_eks_cluster" "this" {
-  name     = var.name
-  role_arn = var.role_arn
-  version  = var.kubernetes_version
+module "efs_access_point" {
+  source = "git::https://github.com/launchbynttdata/tf-aws-module_primitive-efs_access_point.git?ref=main"
 
-  vpc_config {
-    subnet_ids              = var.vpc_config.subnet_ids
-    security_group_ids      = var.vpc_config.security_group_ids
-    endpoint_private_access = var.vpc_config.endpoint_private_access
-    endpoint_public_access  = var.vpc_config.endpoint_public_access
-    public_access_cidrs     = var.vpc_config.public_access_cidrs
-  }
+  efs_file_system_id = aws_efs_file_system.example.id
 
-  tags = merge(
-    var.tags,
-    local.default_tags
-  )
-}
-```
-
-#### `variables.tf`
-
-- Define all configurable parameters
-- Include clear descriptions for each variable
-- Set sensible defaults where appropriate
-- Use validation rules to enforce constraints, but only when the validations can be made precise.
-- Alternatively, use [`check`](https://developer.hashicorp.com/terraform/language/block/check) blocks to create more complicated validations. (Requires terraform ~> 1.12)
-- Example:
-
-```hcl
-variable "name" {
-  description = "Name of the EKS cluster"
-  type        = string
-
-  validation {
-    condition     = length(var.name) <= 100
-    error_message = "Cluster name must be 100 characters or less"
-  }
-}
-
-variable "kubernetes_version" {
-  description = "Kubernetes version to use for the EKS cluster"
-  type        = string
-  default     = null
-
-  validation {
-    condition     = var.kubernetes_version == null || can(regex("^1\\.(2[89]|[3-9][0-9])$", var.kubernetes_version))
-    error_message = "Kubernetes version must be 1.28 or higher"
+  tags = {
+    Environment = "production"
+    Application = "myapp"
   }
 }
 ```
 
-#### `outputs.tf`
+### Complete Example
 
-- Export all useful attributes of the resource
-- Include comprehensive outputs for downstream consumption
-- Document what each output provides
-- Example:
+Create an EFS access point with POSIX user and root directory enforcement:
 
 ```hcl
-output "id" {
-  description = "The ID of the EKS cluster"
-  value       = aws_eks_cluster.this.id
-}
+module "efs_access_point" {
+  source = "git::https://github.com/launchbynttdata/tf-aws-module_primitive-efs_access_point.git?ref=main"
 
-output "arn" {
-  description = "The ARN of the EKS cluster"
-  value       = aws_eks_cluster.this.arn
-}
+  efs_file_system_id = aws_efs_file_system.example.id
 
-output "endpoint" {
-  description = "The endpoint for the EKS cluster API server"
-  value       = aws_eks_cluster.this.endpoint
-}
-```
-
-#### `locals.tf`
-
-- Define local values and transformations
-- Include standard tags (e.g., `provisioner = "Terraform"`)
-- Example:
-
-```hcl
-locals {
-  default_tags = {
-    provisioner = "Terraform"
+  posix_user = {
+    uid = 1000
+    gid = 1000
   }
-}
-```
 
-#### `versions.tf`
-
-- Specify required Terraform and provider versions
-- Example:
-
-```hcl
-terraform {
-  required_version = "~> 1.5"
-
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.100"
+  root_directory = {
+    path = "/app-data"
+    creation_info = {
+      owner_uid   = 1000
+      owner_gid   = 1000
+      permissions = "755"
     }
   }
+
+  tags = {
+    Environment = "production"
+    Application = "myapp"
+  }
 }
 ```
 
-### Step 3: Create Examples
+## Module Inputs
 
-Create example configurations in the `examples/` directory:
+| Name | Description | Type | Default | Required |
+|------|-------------|------|---------|:--------:|
+| `efs_file_system_id` | The ID of the EFS file system | `string` | n/a | yes |
+| `posix_user` | POSIX user configuration for the access point | `object({ uid = number, gid = number })` | `null` | no |
+| `root_directory` | Root directory configuration for the access point | `object({ path = string, creation_info = optional(...) })` | `null` | no |
+| `name` | Name tag for the access point resource | `string` | `null` | no |
+| `tags` | A map of tags to assign to the resource | `map(string)` | `{}` | no |
 
-#### `examples/simple/`
+### Input Details
 
-- Minimal, working configuration
-- Uses only required variables
-- Good for quick starts and basic testing
+#### `efs_file_system_id`
+- **Type**: `string`
+- **Required**: Yes
+- **Description**: The ID of the EFS file system to which this access point will be attached
 
-#### `examples/complete/`
+#### `posix_user`
+- **Type**: `object({ uid = number, gid = number })`
+- **Default**: `null`
+- **Description**: POSIX user configuration. When set, enforces that all file system requests use the specified UID and GID
+- **Fields**:
+  - `uid`: The numeric user ID (UID)
+  - `gid`: The numeric group ID (GID)
 
-- Comprehensive configuration showing all features
-- Demonstrates advanced options
-- Includes comments explaining choices
+#### `root_directory`
+- **Type**: `object({ path = string, creation_info = optional(object({ owner_uid = number, owner_gid = number, permissions = string })) })`
+- **Default**: `null`
+- **Description**: Root directory configuration. When set, specifies a directory within the file system to serve as the root
+- **Fields**:
+  - `path`: The absolute path to the directory within the file system (e.g., `/data`)
+  - `creation_info` (optional):
+    - `owner_uid`: The numeric UID to use for directory ownership
+    - `owner_gid`: The numeric GID to use for directory ownership
+    - `permissions`: The permission mode in octal format (e.g., `"755"`)
 
-Each example should include:
+#### `tags`
+- **Type**: `map(string)`
+- **Default**: `{}`
+- **Description**: A map of tags to assign to the access point resource
+- **Special Tags**: The module automatically adds a `ManagedBy = "Terraform"` tag
 
-- `main.tf` - The module invocation
-- `variables.tf` - Example variables
-- `outputs.tf` - Pass-through outputs
-- `test.tfvars` - Test values for automated testing
-- `README.md` - Documentation for the example
+#### `name`
+- **Type**: `string`
+- **Default**: `null`
+- **Description**: Name tag for the access point resource. If provided, will be added as a 'Name' tag.
 
-### Step 4: Write Tests
+## Module Outputs
 
-Update the test files in `tests/`:
+| Name | Description | Type |
+|------|-------------|------|
+| `access_point_id` | The ID of the EFS access point | `string` |
+| `access_point_arn` | The ARN of the EFS access point | `string` |
 
-#### `tests/testimpl/test_impl.go`
+## Requirements
 
-Write functional tests that verify:
+- **Terraform**: >= 1.7
+- **AWS Provider**: >= 5.100
 
-- The resource is created successfully
-- Resource properties match expectations
-- Outputs are correct
-- Integration with AWS SDK to verify actual state
+## Examples
 
-#### `tests/testimpl/types.go`
+### Example 1: Basic Access Point (Minimal Configuration)
 
-Define the configuration structure for your tests:
+```hcl
+module "basic_access_point" {
+  source = "git::https://github.com/launchbynttdata/tf-aws-module_primitive-efs_access_point.git?ref=main"
 
-```go
-type ThisTFModuleConfig struct {
-    Name              string `json:"name"`
-    KubernetesVersion string `json:"kubernetes_version"`
-    // ... other fields
+  efs_file_system_id = aws_efs_file_system.main.id
+
+  tags = {
+    Environment = "dev"
+    Name        = "basic-ap"
+  }
 }
 ```
 
-#### `tests/post_deploy_functional/main_test.go`
+### Example 2: Access Point with POSIX User
 
-- Update test names to match your module
-- Configure test flags (e.g., idempotency settings)
-- Adjust test context as needed
+```hcl
+module "app_user_access_point" {
+  source = "git::https://github.com/launchbynttdata/tf-aws-module_primitive-efs_access_point.git?ref=main"
 
-### Step 5: Update Documentation
+  efs_file_system_id = aws_efs_file_system.main.id
 
-1. **Update README.md** with:
-   - Overview of the module
-   - Feature list
-   - Usage examples
-   - Input/output documentation
-   - Validation rules
+  posix_user = {
+    uid = 1000
+    gid = 1000
+  }
 
-2. **Document validation rules** clearly so users understand constraints.
+  tags = {
+    Environment = "prod"
+    Name        = "app-user-ap"
+  }
+}
+```
 
-### Step 6: Test Your Module
+### Example 3: Access Point with Root Directory Enforcement
 
-1. **Run local validation**:
+```hcl
+module "restricted_access_point" {
+  source = "git::https://github.com/launchbynttdata/tf-aws-module_primitive-efs_access_point.git?ref=main"
+
+  efs_file_system_id = aws_efs_file_system.main.id
+
+  root_directory = {
+    path = "/var/app/data"
+    creation_info = {
+      owner_uid   = 500
+      owner_gid   = 500
+      permissions = "700"
+    }
+  }
+
+  tags = {
+    Environment = "prod"
+    Name        = "restricted-ap"
+  }
+}
+```
+
+### Example 4: Complete Access Point (All Features)
+
+See `examples/complete/` for a full working example that demonstrates all features including file system creation.
+
+### Example 5: Simple Access Point (Quick Start)
+
+See `examples/simple/` for a quick-start example showing minimal configuration.
+
+## Testing
+
+### Prerequisites
+
+- Terraform >= 1.7
+- AWS CLI configured with appropriate credentials
+- Go 1.23 or later
+- `make` command
+
+### Running Tests
 
 ```bash
+# Run all validation checks including formatting, linting, and Terratest
 make check
+
+# Run only Terratest functional tests
+cd tests && go test ./...
+
+# Run specific example tests
+cd examples/simple && terraform plan -var-file=test.tfvars
+cd examples/complete && terraform plan -var-file=test.tfvars
 ```
 
-This runs:
+## Security Considerations
 
-- Terraform fmt, validate, and plan
-- Go tests with Terratest
-- Pre-commit hooks
-- Security scans
+1. **POSIX User Enforcement**: When `posix_user` is configured, all file operations through the access point will use the specified UID/GID, preventing privilege escalation
 
-1. **Test with real infrastructure**:
+2. **Root Directory Enforcement**: When `root_directory` is configured, clients can only access files within the specified directory tree, preventing access to other file system areas
 
-```bash
-cd examples/simple
-terraform init
-terraform plan -var-file=test.tfvars -out=the.tfplan
-terraform apply the.tfplan
-```
+3. **File Permissions**: Set appropriate `permissions` in `creation_info` to control access to the root directory
 
-1. **Verify outputs**:
+4. **Access Control**: Combine access points with appropriate IAM policies and security group rules to implement defense-in-depth
 
-```bash
-terraform output
-```
+## Important Notes
 
-1. **Clean up**:
+- The EFS file system must exist before creating an access point
+- POSIX user IDs should be unique across your access points for clarity
+- The root directory path must exist in the file system or be auto-created with the specified `creation_info`
+- Access points are useful for multi-tenant scenarios where different users/applications need isolated access
+- Consider using access points with Amazon EFS mount helpers for simplified setup
 
-```bash
-terraform destroy -var-file=test.tfvars
-```
+## Documentation
 
-### Step 7: Document and Release
-
-1. **Write a comprehensive README** following the pattern in the example modules
-1. **Add files to commit** `git add .`
-1. **Run pre-commit hooks manually** `pre-commit run`
-1. **Resolve any pre-commit issues**
-1. **Push branch to github**
-
----
-
-## Module Best Practices
-
-### Naming Conventions
-
-- Repository: `tf-aws-module_primitive-<resource_name>`
-- Resource identifier: Use `this` for the primary resource.
-- Variables: Use snake_case.
-- Match AWS resource parameter names where possible.
-
-### Input Variables
-
-- Provide sensible defaults when safe to do so.
-- Use `null` as default for optional complex objects.
-- Include validation rules with clear error messages.
-- Group related parameters using object types.
-- Document expected formats and constraints.
-
-### Outputs
-
-- Export all significant resource attributes.
-- Use clear, descriptive output names.
-- Include descriptions for all outputs.
-- Consider downstream module needs.
-
-### Tags
-
-- Always include a `tags` variable, unless the resource does not support tags.
-- Merge with `local.default_tags` including `provisioner = "Terraform"`.
-- Use provider default tags when appropriate.
-
-### Validation
-
-- Validate input constraints at the variable level.
-- Provide helpful error messages.
-- Check for common misconfigurations.
-- Validate relationships between variables.
-
-### Testing
-
-- Test the minimal example (required parameters only).
-- Test the complete example (all features).
-- Verify resource creation and properties.
-- Test idempotency where applicable.
-- Test validation rules by expecting failures.
-
-### Documentation
-
-- Clear overview of the module's purpose.
-- Feature list highlighting key capabilities.
-- Multiple usage examples (minimal and complete).
-- Comprehensive input/output tables.
-- Document validation rules and constraints.
-- Include links to relevant AWS documentation.
-
----
-
-## File Structure
-
-After initialization, your module should have this structure:
-
-```
-tf-aws-module_primitive-<resource_name>/
-├── .github/
-│   └── workflows/          # CI/CD workflows
-├── examples/
-│   ├── simple/            # Minimal example
-│   │   ├── main.tf
-│   │   ├── variables.tf
-│   │   ├── outputs.tf
-│   │   ├── test.tfvars
-│   │   └── README.md
-│   └── complete/          # Comprehensive example
-│       ├── main.tf
-│       ├── variables.tf
-│       ├── outputs.tf
-│       ├── test.tfvars
-│       └── README.md
-├── tests/
-│   ├── post_deploy_functional/
-│   │   └── main_test.go
-│   ├── testimpl/
-│   │   ├── test_impl.go
-│   │   └── types.go
-├── .gitignore
-├── .pre-commit-config.yaml
-├── .tool-versions
-├── go.mod
-├── go.sum
-├── LICENSE
-├── locals.tf
-├── main.tf
-├── Makefile
-├── outputs.tf
-├── README.md
-├── variables.tf
-└── versions.tf
-```
-
----
-
-## Common Makefile Targets
-
-| Target | Description |
-|--------|-------------|
-| `make init-module` | Initialize new module from template (run once after creating from template) |
-| `make configure-dependencies` | Install required development tools |
-| `make configure-git-hooks` | Set up pre-commit hooks |
-| `make check` | Run all validation and tests |
-| `make configure` | Full setup (dependencies + hooks + repo sync) |
-| `make clean` | Remove downloaded components |
-
----
-
-## Getting Help
-
-- Review example modules: [EKS Cluster](https://github.com/launchbynttdata/tf-aws-module_primitive-eks_cluster), [KMS Key](https://github.com/launchbynttdata/tf-aws-module_primitive-kms_key)
-- Check the Launch Common Automation Framework documentation.
-- Reach out to the platform team for guidance.
-
----
+- [AWS EFS Access Points Documentation](https://docs.aws.amazon.com/efs/latest/ug/efs-access-points.html)
+- [AWS EFS Best Practices](https://docs.aws.amazon.com/efs/latest/ug/best-practices.html)
 
 ## Contributing
 
-Follow the established patterns in existing primitive modules. All modules should:
+Please follow the established patterns in this module when contributing. All contributions should:
 
-- Pass `make check` validation.
-- Include comprehensive tests.
-- Follow naming conventions.
-- Include clear documentation.
-- Use semantic versioning.
+- Pass `make check` validation
+- Include appropriate examples if adding features
+- Update documentation as needed
+- Follow the Apache 2.0 license terms
+
+## License
+
+This module is licensed under the Apache License 2.0. See [LICENSE](LICENSE) for details.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.5 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.100 |
-
-## Providers
-
-| Name | Version |
-|------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.100.0 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.7 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.100 |
 
 ## Modules
 
@@ -451,19 +284,27 @@ No modules.
 
 | Name | Type |
 |------|------|
-| [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
+| [aws_efs_access_point.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/efs_access_point) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_hello_message"></a> [hello\_message](#input\_hello\_message) | A friendly hello message. | `string` | `"Hello, Terraform!"` | no |
+| <a name="input_efs_file_system_id"></a> [efs\_file\_system\_id](#input\_efs\_file\_system\_id) | The ID of the EFS file system | `string` | n/a | yes |
+| <a name="input_posix_user"></a> [posix\_user](#input\_posix\_user) | A POSIX user identity block. Enforces a user identity for all file system requests made through the access point. | <pre>object({<br/>    uid            = number<br/>    gid            = number<br/>    secondary_gids = optional(list(number))<br/>  })</pre> | `null` | no |
+| <a name="input_root_directory"></a> [root\_directory](#input\_root\_directory) | A root directory block. Specifies the directory on the EFS file system that the access point provides access to. | <pre>object({<br/>    path = string<br/>    creation_info = optional(object({<br/>      owner_uid   = number<br/>      owner_gid   = number<br/>      permissions = string<br/>    }))<br/>  })</pre> | `null` | no |
+| <a name="input_name"></a> [name](#input\_name) | Name tag for the access point resource. If provided, will be added as a 'Name' tag. | `string` | `null` | no |
+| <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to assign to the resource | `map(string)` | `{}` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| <a name="output_account_id"></a> [account\_id](#output\_account\_id) | n/a |
-| <a name="output_arn"></a> [arn](#output\_arn) | n/a |
-| <a name="output_hello_message"></a> [hello\_message](#output\_hello\_message) | n/a |
+| <a name="output_access_point_id"></a> [access\_point\_id](#output\_access\_point\_id) | The ID of the EFS access point |
+| <a name="output_access_point_arn"></a> [access\_point\_arn](#output\_access\_point\_arn) | Amazon Resource Name of the access point |
+| <a name="output_file_system_id"></a> [file\_system\_id](#output\_file\_system\_id) | The ID of the EFS file system that the access point applies to |
+| <a name="output_owner_id"></a> [owner\_id](#output\_owner\_id) | The AWS account ID that owns the access point resource |
+| <a name="output_posix_user"></a> [posix\_user](#output\_posix\_user) | The full POSIX identity, including the user ID, group ID, and secondary group IDs on the access point |
+| <a name="output_root_directory"></a> [root\_directory](#output\_root\_directory) | The directory on the EFS file system that the access point exposes as the root directory to NFS clients |
+| <a name="output_tags"></a> [tags](#output\_tags) | A map of tags assigned to the access point |
 <!-- END_TF_DOCS -->

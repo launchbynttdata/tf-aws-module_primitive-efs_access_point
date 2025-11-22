@@ -35,6 +35,22 @@ resource "aws_efs_file_system" "this" {
   performance_mode = var.performance_mode
   throughput_mode  = var.throughput_mode
 
+  dynamic "lifecycle_policy" {
+    for_each = var.lifecycle_policy != null ? [var.lifecycle_policy] : []
+    content {
+      transition_to_ia                    = lifecycle_policy.value.transition_to_ia
+      transition_to_primary_storage_class = lifecycle_policy.value.transition_to_primary_storage_class
+      transition_to_archive               = lifecycle_policy.value.transition_to_archive
+    }
+  }
+
+  dynamic "protection" {
+    for_each = var.protection != null ? [var.protection] : []
+    content {
+      replication_overwrite = protection.value.replication_overwrite
+    }
+  }
+
   tags = merge(
     var.tags,
     {
@@ -47,6 +63,10 @@ module "efs_access_point" {
   source = "../../"
 
   efs_file_system_id = aws_efs_file_system.this.id
+
+  posix_user = var.posix_user
+
+  root_directory = var.root_directory
 
   name = try(module.resource_names["efs"].standard, var.name)
 
