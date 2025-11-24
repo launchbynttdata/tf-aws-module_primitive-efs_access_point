@@ -273,8 +273,8 @@ This module is licensed under the Apache License 2.0. See [LICENSE](LICENSE) for
 
 | Name | Version |
 |------|---------|
-| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.7 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 5.100 |
+| <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.7 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.100 |
 
 ## Modules
 
@@ -293,8 +293,8 @@ No modules.
 | <a name="input_efs_file_system_id"></a> [efs\_file\_system\_id](#input\_efs\_file\_system\_id) | The ID of the EFS file system | `string` | n/a | yes |
 | <a name="input_posix_user"></a> [posix\_user](#input\_posix\_user) | A POSIX user identity block. Enforces a user identity for all file system requests made through the access point. | <pre>object({<br/>    uid            = number<br/>    gid            = number<br/>    secondary_gids = optional(list(number))<br/>  })</pre> | `null` | no |
 | <a name="input_root_directory"></a> [root\_directory](#input\_root\_directory) | A root directory block. Specifies the directory on the EFS file system that the access point provides access to. | <pre>object({<br/>    path = string<br/>    creation_info = optional(object({<br/>      owner_uid   = number<br/>      owner_gid   = number<br/>      permissions = string<br/>    }))<br/>  })</pre> | `null` | no |
-| <a name="input_name"></a> [name](#input\_name) | Name tag for the access point resource. If provided, will be added as a 'Name' tag. | `string` | `null` | no |
-| <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to assign to the resource | `map(string)` | `{}` | no |
+| <a name="input_name"></a> [name](#input\_name) | Name tag for the access point resource. If provided, will be added as a 'Name' tag. | `string` | n/a | yes |
+| <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to assign to the EFS file system | `map(string)` | `{}` | no |
 
 ## Outputs
 

@@ -11,13 +11,11 @@
 // limitations under the License.
 
 locals {
-  name_tag = var.name != null ? { "Name" = var.name } : {}
-
   tags = merge(
     {
       "ManagedBy" = "Terraform"
+      "Name"      = var.name
     },
-    local.name_tag,
     var.tags,
   )
 }

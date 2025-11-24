@@ -10,8 +10,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-locals {
-  # Derive region abbreviation from aws_region by removing hyphens
-  # Example: us-west-2 becomes uswest2
-  derived_region = var.aws_region != null ? replace(var.aws_region, "-", "") : var.region
+terraform {
+  required_version = "~> 1.7"
+
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.100"
+    }
+  }
 }

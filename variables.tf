@@ -41,11 +41,14 @@ variable "root_directory" {
 variable "name" {
   description = "Name tag for the access point resource. If provided, will be added as a 'Name' tag."
   type        = string
-  default     = null
+  validation {
+    condition     = var.name != null && var.name != ""
+    error_message = "Name is required and cannot be empty."
+  }
 }
 
 variable "tags" {
-  description = "A map of tags to assign to the resource"
+  description = "A map of tags to assign to the EFS file system"
   type        = map(string)
   default     = {}
 }

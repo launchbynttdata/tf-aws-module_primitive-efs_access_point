@@ -28,10 +28,11 @@ naming_resource_names_map = {
 efs_fs_encrypted        = true
 efs_fs_performance_mode = "generalPurpose"
 efs_fs_throughput_mode  = "bursting"
+efs_fs_name             = "complete-efs-file-system"
 
 # EFS Access Point Configuration
 # naming (optional) - If not given is derived from the Naming Module
-# access_point_name = "complete-efs-access-point"
+name = "complete-efs-access-point"
 
 posix_user = {
   uid            = 1000
@@ -53,7 +54,7 @@ root_directory = {
 tags = {
   Environment = "dev"
   Module      = "efs_access_point"
-  Example     = "complete"
+  Example     = "complete-fixed-name"
   Application = "web-app"
   ManagedBy   = "Terraform"
   CostCenter  = "engineering"

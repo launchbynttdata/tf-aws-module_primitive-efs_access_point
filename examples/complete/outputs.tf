@@ -30,9 +30,14 @@ output "access_point_arn" {
   value       = module.efs_access_point.access_point_arn
 }
 
+output "file_system_name" {
+  description = "The Name tag of the EFS file system (if set)"
+  value       = var.efs_fs_name
+}
+
 output "access_point_name" {
   description = "The Name tag of the EFS access point (if set)"
-  value       = var.access_point_name
+  value       = var.name
 }
 
 output "access_point_owner_id" {

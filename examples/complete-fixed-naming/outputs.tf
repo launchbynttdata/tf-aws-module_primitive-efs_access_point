@@ -30,7 +30,32 @@ output "access_point_arn" {
   value       = module.efs_access_point.access_point_arn
 }
 
+output "file_system_name" {
+  description = "The Name tag of the EFS file system (if set)"
+  value       = var.efs_fs_name
+}
+
 output "access_point_name" {
   description = "The Name tag of the EFS access point (if set)"
   value       = var.name
+}
+
+output "access_point_owner_id" {
+  description = "The AWS account ID that owns the access point resource"
+  value       = module.efs_access_point.owner_id
+}
+
+output "access_point_posix_user" {
+  description = "The POSIX user identity configuration including secondary GIDs"
+  value       = module.efs_access_point.posix_user
+}
+
+output "access_point_root_directory" {
+  description = "The root directory configuration including creation info"
+  value       = module.efs_access_point.root_directory
+}
+
+output "access_point_tags" {
+  description = "Tags assigned to the access point"
+  value       = module.efs_access_point.tags
 }
