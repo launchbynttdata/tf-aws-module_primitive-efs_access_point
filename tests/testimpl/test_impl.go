@@ -26,6 +26,91 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TestPlanOnlyValidation performs validation on terraform plan output without deploying resources
+func TestPlanOnlyValidation(t *testing.T, ctx testTypes.TestContext) {
+	// Get the plan output in JSON format
+	planJSON := terraform.InitAndPlanAndShowWithStruct(t, ctx.TerratestTerraformOptions())
+
+	t.Run("TestPlanHasResources", func(t *testing.T) {
+		testPlanHasResources(t, planJSON)
+	})
+
+	t.Run("TestPlanOutputsExist", func(t *testing.T) {
+		testPlanOutputsExist(t, planJSON)
+	})
+
+	t.Run("TestPlanAccessPointConfiguration", func(t *testing.T) {
+		testPlanAccessPointConfiguration(t, planJSON)
+	})
+}
+
+func testPlanHasResources(t *testing.T, planJSON *terraform.PlanStruct) {
+	require.NotNil(t, planJSON, "Plan JSON should not be nil")
+	require.NotNil(t, planJSON.ResourceChangesMap, "Resource changes map should not be nil")
+
+	// Check that we have at least one EFS access point resource
+	foundAccessPoint := false
+	for _, change := range planJSON.ResourceChangesMap {
+		if change.Type == "aws_efs_access_point" {
+			foundAccessPoint = true
+			break
+		}
+	}
+
+	assert.True(t, foundAccessPoint, "Plan should include at least one aws_efs_access_point resource")
+}
+
+func testPlanOutputsExist(t *testing.T, planJSON *terraform.PlanStruct) {
+	require.NotNil(t, planJSON, "Plan JSON should not be nil")
+	require.NotNil(t, planJSON.RawPlan.OutputChanges, "Output changes should not be nil")
+
+	// Verify expected outputs are defined in the plan
+	expectedOutputs := []string{"access_point_id", "access_point_arn", "file_system_id"}
+	for _, outputName := range expectedOutputs {
+		_, exists := planJSON.RawPlan.OutputChanges[outputName]
+		assert.True(t, exists, "Output '%s' should be defined in the plan", outputName)
+	}
+}
+
+func testPlanAccessPointConfiguration(t *testing.T, planJSON *terraform.PlanStruct) {
+	require.NotNil(t, planJSON, "Plan JSON should not be nil")
+
+	// Find the EFS access point resource in the plan
+	for _, change := range planJSON.ResourceChangesMap {
+		if change.Type == "aws_efs_access_point" && change.Change != nil && change.Change.After != nil {
+			// Validate the configuration in the plan
+			afterMap, ok := change.Change.After.(map[string]interface{})
+			require.True(t, ok, "After state should be a map")
+
+			// Check that file_system_id is set
+			_, hasFileSystemID := afterMap["file_system_id"]
+			assert.True(t, hasFileSystemID, "Access point should have file_system_id configured")
+
+			// If POSIX user is configured, validate structure
+			if posixUser, hasPosixUser := afterMap["posix_user"]; hasPosixUser {
+				if posixUserSlice, ok := posixUser.([]interface{}); ok && len(posixUserSlice) > 0 {
+					if posixUserMap, ok := posixUserSlice[0].(map[string]interface{}); ok {
+						_, hasUID := posixUserMap["uid"]
+						_, hasGID := posixUserMap["gid"]
+						assert.True(t, hasUID, "POSIX user should have UID configured")
+						assert.True(t, hasGID, "POSIX user should have GID configured")
+					}
+				}
+			}
+
+			// If root directory is configured, validate structure
+			if rootDir, hasRootDir := afterMap["root_directory"]; hasRootDir {
+				if rootDirSlice, ok := rootDir.([]interface{}); ok && len(rootDirSlice) > 0 {
+					if rootDirMap, ok := rootDirSlice[0].(map[string]interface{}); ok {
+						_, hasPath := rootDirMap["path"]
+						assert.True(t, hasPath, "Root directory should have path configured")
+					}
+				}
+			}
+		}
+	}
+}
+
 func TestComposableComplete(t *testing.T, ctx testTypes.TestContext) {
 	// Get EFS client to verify access point info
 	efsClient := GetAWSEFSClient(t)

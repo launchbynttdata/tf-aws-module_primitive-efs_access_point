@@ -15,7 +15,7 @@ package test
 import (
 	"testing"
 
-	"github.com/launchbynttdata/lcaf-component-terratest/lib"
+	"github.com/gruntwork-io/terratest/modules/terraform"
 	"github.com/launchbynttdata/lcaf-component-terratest/types"
 	"github.com/launchbynttdata/tf-aws-module_primitive-efs_access_point/tests/testimpl"
 )
@@ -25,7 +25,7 @@ const (
 	infraTFVarFileNameDefault        = "test.tfvars"
 )
 
-func TestEFSAccessPointModule(t *testing.T) {
+func TestEFSAccessPointModulePlanOnly(t *testing.T) {
 
 	ctx := types.CreateTestContextBuilder().
 		SetTestConfig(&testimpl.ThisTFModuleConfig{}).
@@ -33,5 +33,12 @@ func TestEFSAccessPointModule(t *testing.T) {
 		SetTestConfigFileName(infraTFVarFileNameDefault).
 		Build()
 
-	lib.RunSetupTestTeardown(t, *ctx, testimpl.TestComposableComplete)
+	// Initialize terraform
+	terraform.Init(t, ctx.TerratestTerraformOptions())
+
+	// Run plan without applying
+	terraform.Plan(t, ctx.TerratestTerraformOptions())
+
+	// Run plan-only validation tests
+	testimpl.TestPlanOnlyValidation(t, *ctx)
 }

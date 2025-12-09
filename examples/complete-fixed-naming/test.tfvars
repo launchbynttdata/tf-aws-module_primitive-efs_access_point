@@ -3,7 +3,7 @@
 # Copy this file to test.tfvars and customize the values as needed
 
 # general variables
-aws_region = "us-west-2"
+aws_region = "us-east-2"
 
 # Naming Module Configuration
 naming_logical_product_family  = "launch"

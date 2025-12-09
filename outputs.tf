@@ -33,7 +33,11 @@ output "owner_id" {
 
 output "posix_user" {
   description = "The full POSIX identity, including the user ID, group ID, and secondary group IDs on the access point"
-  value       = try(aws_efs_access_point.this.posix_user[0], null)
+  value = var.posix_user != null ? {
+    uid            = var.posix_user.uid
+    gid            = var.posix_user.gid
+    secondary_gids = try(var.posix_user.secondary_gids, null) != null && length(try(var.posix_user.secondary_gids, [])) > 0 ? var.posix_user.secondary_gids : null
+  } : null
 }
 
 output "root_directory" {

@@ -1,10 +1,10 @@
 # Tests Directory
 
-This directory contains the automated test suite this module. Tests are implemented using [Terratest](https://terratest.gruntwork.io/) and the Launch Common Automation Framework (LCAF) testing library.
+This directory contains the automated test suite for this module. Tests are implemented using [Terratest](https://terratest.gruntwork.io/) and the Launch Common Automation Framework (LCAF) testing library.
 
 ## Directory Structure
 
-```
+```text
 tests/
 ├── README.md                          # This file
 ├── post_deploy_functional/            # Full lifecycle tests (deploy, test, destroy)
@@ -21,24 +21,35 @@ tests/
 
 ## Test Types
 
-### Post-Deploy Functional Tests
-Located in `post_deploy_functional/`, these tests:
-- ✅ Deploy the Terraform examples
-- ✅ Validate resource creation and configuration
-- ✅ Verify outputs match expected values
-- ✅ Destroy resources after testing
+### Post-Deploy Functional Read-Only Tests (Plan-Only)
 
-### Post-Deploy Functional Read-Only Tests
-Located in `post_deploy_functional_readonly/`, these tests:
-- ✅ Assume resources are already deployed
-- ✅ Run validation and assertions only
-- ✅ Do not create or destroy resources
-- ✅ Useful for CI/CD when resources persist between stages
+Located in `post_deploy_functional_readonly/`, these tests run **FIRST** and:
+
+- ✅ Run `terraform plan` only (no AWS deployment)
+- ✅ Validate Terraform configuration syntax
+- ✅ Verify plan includes expected resources
+- ✅ Check outputs are defined correctly
+- ✅ Fast feedback without AWS API calls or costs
+- ✅ Safe to run in any environment
+
+### Post-Deploy Functional Tests (Full Deployment)
+
+Located in `post_deploy_functional/`, these tests run **SECOND** and:
+
+- ✅ Deploy the Terraform examples to AWS
+- ✅ Validate resources via AWS SDK API calls
+- ✅ Verify resource properties match configuration
+- ✅ Confirm outputs reflect actual AWS state
+- ✅ Destroy resources after testing
+- ✅ Require AWS credentials and permissions
 
 ### Test Implementation
+
 Located in `testimpl/`, this package contains:
+
 - Shared test logic and assertion functions
-- AWS SDK integration for resource verification
+- Plan-only validation for readonly tests
+- AWS SDK integration for full functional tests
 - Reusable test utilities
 - Configuration type definitions
 
@@ -61,6 +72,7 @@ go test -v ./post_deploy_functional/...  # ❌ Wrong
 ### Prerequisites
 
 1. **AWS Credentials**: Configure AWS credentials with permissions to create/delete EFS resources
+
    ```bash
    export AWS_REGION=us-west-2
    export AWS_ACCESS_KEY_ID=your_access_key
@@ -68,11 +80,13 @@ go test -v ./post_deploy_functional/...  # ❌ Wrong
    ```
 
 2. **Go Installation**: Go 1.24 or later
+
    ```bash
    go version
    ```
 
 3. **Dependencies**: Install Go modules
+
    ```bash
    cd /workspace
    go mod download
@@ -81,30 +95,40 @@ go test -v ./post_deploy_functional/...  # ❌ Wrong
 ### Running All Tests
 
 ```bash
-# From repository root
+# From repository root - recommended approach
 cd /workspace
+make test
 
-# Run all post-deploy functional tests
-go test -v ./tests/post_deploy_functional/...
-
-# Run with timeout (recommended)
-go test -v ./tests/post_deploy_functional/...
-
-# Run with verbose output
-go test -v -count=1 ./tests/post_deploy_functional/...
+# This will automatically:
+# 1. Run readonly (plan-only) tests FIRST
+# 2. Run functional (deployment) tests SECOND
 ```
 
 ### Running Specific Test Suites
 
 ```bash
-# Run only post_deploy_functional tests
-go test -v ./tests/post_deploy_functional
-
-# Run only post_deploy_functional_readonly tests
+# Run ONLY plan-only tests (no AWS deployment)
 go test -v ./tests/post_deploy_functional_readonly
 
+# Run ONLY full functional tests (requires AWS credentials)
+go test -v ./tests/post_deploy_functional
+
 # Run specific test function
-go test -v ./tests/post_deploy_functional -run TestModule
+go test -v ./tests/post_deploy_functional -run TestEFSAccessPointModule
+go test -v ./tests/post_deploy_functional_readonly -run TestEFSAccessPointModulePlanOnly
+```
+
+### Using Make Targets
+
+```bash
+# Run readonly tests only (fast, no AWS)
+make go/readonly_test
+
+# Run all tests (readonly first, then functional)
+make go/test
+
+# Run with custom timeout
+GO_TEST_TIMEOUT=1h make go/test
 ```
 
 ### Test Environment Variables
@@ -127,27 +151,56 @@ go test -v ./tests/post_deploy_functional/...
 
 ## Test Coverage
 
-The test suite validates:
+### Plan-Only Tests (Readonly)
 
-### AWS Resource Verification
-- ✅ Resources exist in AWS (via SDK)
-- ✅ Resource properties match Terraform outputs
-- ✅ Throughput mode is configured correctly
-- ✅ Performance mode matches expectations
+- ✅ Terraform configuration is valid
+- ✅ Plan includes aws_efs_access_point resources
+- ✅ Required outputs are defined (access_point_id, access_point_arn, file_system_id)
+- ✅ POSIX user configuration structure (if configured)
+- ✅ Root directory configuration structure (if configured)
 
-### Output Validation
-- ✅ All outputs are populated
-- ✅ Output values match AWS API responses
-- ✅ Outputs use correct formats
+### Full Functional Tests (Deployment)
+
+- ✅ EFS Access Point exists in AWS (verified via AWS SDK)
+- ✅ Access Point ID format is correct (fsap-*)
+- ✅ Access Point ARN format is valid
+- ✅ File system association is correct
+- ✅ POSIX user settings match configuration (UID, GID, secondary GIDs)
+- ✅ Root directory path and creation info match
+- ✅ All Terraform outputs match actual AWS resource properties
 
 ## Test Execution Flow
 
+### Readonly Tests (Plan-Only)
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│ 1. Initialize Phase                                         │
+│    • Initialize Terraform                                   │
+│    • Read test.tfvars configuration                         │
+│    • No AWS resources created                               │
+├─────────────────────────────────────────────────────────────┤
+│ 2. Plan Phase                                               │
+│    • Run terraform plan                                     │
+│    • Generate plan JSON                                     │
+│    • No changes applied to AWS                              │
+├─────────────────────────────────────────────────────────────┤
+│ 3. Validation Phase                                         │
+│    • Validate plan structure                                │
+│    • Check resource definitions                             │
+│    • Verify output definitions                              │
+│    • Validate configuration values                          │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+### Functional Tests (Full Deployment)
+
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │ 1. Setup Phase                                              │
 │    • Initialize Terraform                                   │
 │    • Read test.tfvars configuration                         │
-│    • Run terraform apply                                    │
+│    • Run terraform apply (deploys to AWS)                   │
 └────────────────────────────┬────────────────────────────────┘
                              │
 ┌────────────────────────────▼────────────────────────────────┐
@@ -169,21 +222,25 @@ The test suite validates:
 
 ### Common Issues
 
-**Tests fail with "timeout"**
+#### Tests fail with "timeout"
+
 - Resources can take time to create/delete
 - Tests run to completion naturally without timeout flags
 - If a test hangs, cancel it manually (Ctrl+C)
 
-**Tests fail with "permission denied"**
+#### Tests fail with "permission denied"
+
 - Verify AWS credentials are configured
 - Ensure IAM permissions include required actions
 
-**Tests fail with "resource already exists"**
+#### Tests fail with "resource already exists"
+
 - Change `creation_token` in test.tfvars to a unique value
 - Clean up existing resources manually
 - Check for orphaned resources in AWS Console
 
-**Tests fail but resources remain**
+#### Tests fail but resources remain
+
 - Set `SKIP_teardown_test_simple=true` to debug
 - Manually destroy with: `cd examples/simple && terraform destroy`
 - Check AWS Console for lingering resources
@@ -205,6 +262,7 @@ go test -v ./tests/post_deploy_functional/... 2>&1 | tee test.log
 To add additional test coverage:
 
 1. **Add test functions** to `testimpl/test_impl.go`
+
    ```go
    func testNewFeature(t *testing.T, awsFileSystem *types.FileSystemDescription) {
        // Your assertions here
@@ -212,6 +270,7 @@ To add additional test coverage:
    ```
 
 2. **Call from TestComposableComplete** in `testimpl/test_impl.go`
+
    ```go
    t.Run("TestNewFeature", func(t *testing.T) {
        testNewFeature(t, &awsFileSystem)
@@ -219,6 +278,7 @@ To add additional test coverage:
    ```
 
 3. **Run tests** to verify
+
    ```bash
    go test -v ./tests/post_deploy_functional/...
    ```
