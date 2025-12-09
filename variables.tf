@@ -20,7 +20,7 @@ variable "posix_user" {
   type = object({
     uid            = number
     gid            = number
-    secondary_gids = optional(list(number))
+    secondary_gids = optional(list(number), [])
   })
   default = null
 }
