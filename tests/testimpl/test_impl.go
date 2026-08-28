@@ -29,7 +29,7 @@ import (
 // TestPlanOnlyValidation performs validation on terraform plan output without deploying resources
 func TestPlanOnlyValidation(t *testing.T, ctx testTypes.TestContext) {
 	// Get the plan output in JSON format
-	planJSON := terraform.InitAndPlanAndShowWithStruct(t, ctx.TerratestTerraformOptions())
+	planJSON := terraform.InitAndPlanAndShowWithStructContext(t, context.Background(), ctx.TerratestTerraformOptions())
 
 	t.Run("TestPlanHasResources", func(t *testing.T) {
 		testPlanHasResources(t, planJSON)
@@ -116,9 +116,9 @@ func TestComposableComplete(t *testing.T, ctx testTypes.TestContext) {
 	efsClient := GetAWSEFSClient(t)
 
 	// Get outputs from Terraform
-	accessPointID := terraform.Output(t, ctx.TerratestTerraformOptions(), "access_point_id")
-	accessPointARN := terraform.Output(t, ctx.TerratestTerraformOptions(), "access_point_arn")
-	fileSystemID := terraform.Output(t, ctx.TerratestTerraformOptions(), "file_system_id")
+	accessPointID := terraform.OutputContext(t, context.Background(), ctx.TerratestTerraformOptions(), "access_point_id")
+	accessPointARN := terraform.OutputContext(t, context.Background(), ctx.TerratestTerraformOptions(), "access_point_arn")
+	fileSystemID := terraform.OutputContext(t, context.Background(), ctx.TerratestTerraformOptions(), "file_system_id")
 
 	t.Run("TestAccessPointIdNotEmpty", func(t *testing.T) {
 		testAccessPointIdNotEmpty(t, accessPointID)
