@@ -182,18 +182,12 @@ tags = {
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | ~> 1.7 |
 | <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.100 |
 
-## Providers
-
-| Name | Version |
-|------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.100.0 |
-
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_resource_names"></a> [resource\_names](#module\_resource\_names) | terraform.registry.launch.nttdata.com/module_library/resource_name/launch | ~> 2.0 |
 | <a name="module_efs_access_point"></a> [efs\_access\_point](#module\_efs\_access\_point) | ../../ | n/a |
+| <a name="module_resource_names"></a> [resource\_names](#module\_resource\_names) | terraform.registry.launch.nttdata.com/module_library/resource_name/launch | ~> 2.0 |
 
 ## Resources
 
@@ -206,21 +200,21 @@ tags = {
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | (Required) The location where the resource will be created. Must not have spaces<br/>    For example, us-east-1, us-west-2, eu-west-1, etc. | `string` | n/a | yes |
-| <a name="input_naming_logical_product_family"></a> [naming\_logical\_product\_family](#input\_naming\_logical\_product\_family) | (Required) Name of the product family for which the resource is created.<br/>    Example: org\_name, department\_name. | `string` | `"launch"` | no |
-| <a name="input_naming_logical_product_service"></a> [naming\_logical\_product\_service](#input\_naming\_logical\_product\_service) | (Required) Name of the product service for which the resource is created.<br/>    For example, backend, frontend, middleware etc. | `string` | `"backend"` | no |
-| <a name="input_naming_instance_resource"></a> [naming\_instance\_resource](#input\_naming\_instance\_resource) | Number that represents the instance of the resource. | `number` | `0` | no |
-| <a name="input_naming_instance_env"></a> [naming\_instance\_env](#input\_naming\_instance\_env) | Number that represents the instance of the environment. | `number` | `0` | no |
-| <a name="input_naming_class_env"></a> [naming\_class\_env](#input\_naming\_class\_env) | (Required) Environment where resource is going to be deployed. For example. dev, qa, uat | `string` | `"dev"` | no |
-| <a name="input_naming_resource_names_map"></a> [naming\_resource\_names\_map](#input\_naming\_resource\_names\_map) | A map of key to resource\_name that will be used by tf-launch-module\_library-resource\_name to generate resource names | <pre>map(object(<br/>    {<br/>      name       = string<br/>      max_length = optional(number, 60)<br/>    }<br/>  ))</pre> | `{}` | no |
 | <a name="input_efs_fs_creation_token"></a> [efs\_fs\_creation\_token](#input\_efs\_fs\_creation\_token) | A unique name used as reference when creating the EFS. If null, will use generated name from resource\_names module | `string` | `null` | no |
 | <a name="input_efs_fs_encrypted"></a> [efs\_fs\_encrypted](#input\_efs\_fs\_encrypted) | Enable encryption at rest for the EFS file system. | `bool` | `true` | no |
 | <a name="input_efs_fs_kms_key_id"></a> [efs\_fs\_kms\_key\_id](#input\_efs\_fs\_kms\_key\_id) | The ARN for the KMS encryption key to be used to encrypt the filesystem. | `string` | `null` | no |
-| <a name="input_efs_fs_performance_mode"></a> [efs\_fs\_performance\_mode](#input\_efs\_fs\_performance\_mode) | The file system performance mode. Valid values: generalPurpose, maxIO. | `string` | `"generalPurpose"` | no |
-| <a name="input_efs_fs_throughput_mode"></a> [efs\_fs\_throughput\_mode](#input\_efs\_fs\_throughput\_mode) | Throughput mode for the file system. Valid values: bursting, provisioned. | `string` | `"bursting"` | no |
 | <a name="input_efs_fs_lifecycle_policy"></a> [efs\_fs\_lifecycle\_policy](#input\_efs\_fs\_lifecycle\_policy) | A lifecycle\_policy block as defined below. | <pre>object({<br/>    transition_to_ia                    = optional(string)<br/>    transition_to_primary_storage_class = optional(string)<br/>    transition_to_archive               = optional(string)<br/>  })</pre> | `null` | no |
-| <a name="input_efs_fs_protection"></a> [efs\_fs\_protection](#input\_efs\_fs\_protection) | A protection block as defined below. | <pre>object({<br/>    replication_overwrite = optional(string)<br/>  })</pre> | `null` | no |
 | <a name="input_efs_fs_name"></a> [efs\_fs\_name](#input\_efs\_fs\_name) | Optional name for the EFS file system. If provided, will be added as a 'Name' tag. If null, will use generated name from resource\_names module | `string` | `null` | no |
+| <a name="input_efs_fs_performance_mode"></a> [efs\_fs\_performance\_mode](#input\_efs\_fs\_performance\_mode) | The file system performance mode. Valid values: generalPurpose, maxIO. | `string` | `"generalPurpose"` | no |
+| <a name="input_efs_fs_protection"></a> [efs\_fs\_protection](#input\_efs\_fs\_protection) | A protection block as defined below. | <pre>object({<br/>    replication_overwrite = optional(string)<br/>  })</pre> | `null` | no |
+| <a name="input_efs_fs_throughput_mode"></a> [efs\_fs\_throughput\_mode](#input\_efs\_fs\_throughput\_mode) | Throughput mode for the file system. Valid values: bursting, provisioned. | `string` | `"bursting"` | no |
 | <a name="input_name"></a> [name](#input\_name) | Optional name for the EFS access point. If provided, will be added as a 'Name' tag. | `string` | `null` | no |
+| <a name="input_naming_class_env"></a> [naming\_class\_env](#input\_naming\_class\_env) | (Required) Environment where resource is going to be deployed. For example. dev, qa, uat | `string` | `"dev"` | no |
+| <a name="input_naming_instance_env"></a> [naming\_instance\_env](#input\_naming\_instance\_env) | Number that represents the instance of the environment. | `number` | `0` | no |
+| <a name="input_naming_instance_resource"></a> [naming\_instance\_resource](#input\_naming\_instance\_resource) | Number that represents the instance of the resource. | `number` | `0` | no |
+| <a name="input_naming_logical_product_family"></a> [naming\_logical\_product\_family](#input\_naming\_logical\_product\_family) | (Required) Name of the product family for which the resource is created.<br/>    Example: org\_name, department\_name. | `string` | `"launch"` | no |
+| <a name="input_naming_logical_product_service"></a> [naming\_logical\_product\_service](#input\_naming\_logical\_product\_service) | (Required) Name of the product service for which the resource is created.<br/>    For example, backend, frontend, middleware etc. | `string` | `"backend"` | no |
+| <a name="input_naming_resource_names_map"></a> [naming\_resource\_names\_map](#input\_naming\_resource\_names\_map) | A map of key to resource\_name that will be used by tf-launch-module\_library-resource\_name to generate resource names | <pre>map(object(<br/>    {<br/>      name       = string<br/>      max_length = optional(number, 60)<br/>    }<br/>  ))</pre> | `{}` | no |
 | <a name="input_posix_user"></a> [posix\_user](#input\_posix\_user) | POSIX user configuration for the access point | <pre>object({<br/>    uid            = number<br/>    gid            = number<br/>    secondary_gids = optional(list(number))<br/>  })</pre> | `null` | no |
 | <a name="input_root_directory"></a> [root\_directory](#input\_root\_directory) | Root directory configuration for the access point | <pre>object({<br/>    path = string<br/>    creation_info = optional(object({<br/>      owner_uid   = number<br/>      owner_gid   = number<br/>      permissions = string<br/>    }))<br/>  })</pre> | `null` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | A map of tags to assign to the resources | `map(string)` | <pre>{<br/>  "Environment": "dev",<br/>  "Example": "complete"<br/>}</pre> | no |
@@ -229,14 +223,14 @@ tags = {
 
 | Name | Description |
 |------|-------------|
-| <a name="output_file_system_id"></a> [file\_system\_id](#output\_file\_system\_id) | The ID of the EFS file system |
-| <a name="output_file_system_arn"></a> [file\_system\_arn](#output\_file\_system\_arn) | The ARN of the EFS file system |
-| <a name="output_access_point_id"></a> [access\_point\_id](#output\_access\_point\_id) | The ID of the EFS access point |
 | <a name="output_access_point_arn"></a> [access\_point\_arn](#output\_access\_point\_arn) | The ARN of the EFS access point |
-| <a name="output_file_system_name"></a> [file\_system\_name](#output\_file\_system\_name) | The Name tag of the EFS file system (if set) |
+| <a name="output_access_point_id"></a> [access\_point\_id](#output\_access\_point\_id) | The ID of the EFS access point |
 | <a name="output_access_point_name"></a> [access\_point\_name](#output\_access\_point\_name) | The Name tag of the EFS access point (if set) |
 | <a name="output_access_point_owner_id"></a> [access\_point\_owner\_id](#output\_access\_point\_owner\_id) | The AWS account ID that owns the access point resource |
 | <a name="output_access_point_posix_user"></a> [access\_point\_posix\_user](#output\_access\_point\_posix\_user) | The POSIX user identity configuration including secondary GIDs |
 | <a name="output_access_point_root_directory"></a> [access\_point\_root\_directory](#output\_access\_point\_root\_directory) | The root directory configuration including creation info |
 | <a name="output_access_point_tags"></a> [access\_point\_tags](#output\_access\_point\_tags) | Tags assigned to the access point |
+| <a name="output_file_system_arn"></a> [file\_system\_arn](#output\_file\_system\_arn) | The ARN of the EFS file system |
+| <a name="output_file_system_id"></a> [file\_system\_id](#output\_file\_system\_id) | The ID of the EFS file system |
+| <a name="output_file_system_name"></a> [file\_system\_name](#output\_file\_system\_name) | The Name tag of the EFS file system (if set) |
 <!-- END_TF_DOCS -->
